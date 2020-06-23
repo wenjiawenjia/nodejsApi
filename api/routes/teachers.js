@@ -125,9 +125,18 @@ router.post('/suspend', (req, res, next) => {
 });
 // 4. As a teacher, I want to retrieve a list of students who can receive a given notification.
 router.post('/retrievefornotifications', (req, res, next) => {
+    const n = req.body.notification.split(" @");
+
+    const studentEmails = [];
+    n.forEach(x => {
+        if (x.includes('@')) {
+            studentEmails.push(x);
+        }
+    })
+    console.log(studentEmails)
 
     mysqlConnection.query(
-        "select s.email from students s inner join notifications n on s.id=n.student inner join teachers t on t.id=n.teacher where t.email=? and n.description=?", [req.body.teacher, req.body.notification], (err, rows, fields) => {
+        "select distinct s.* from  ApiAssessment.students s  left join ApiAssessment.classes c on s.id = c.student left join ApiAssessment.teachers t on t.id = c.teacher where s.isSuspended = false and( t.email = ?  or s.email in(?))", [req.body.teacher, studentEmails], (err, rows, fields) => {
             if (!err) {
                 // // console.log(rows);
                 const temp = [];
@@ -135,9 +144,10 @@ router.post('/retrievefornotifications', (req, res, next) => {
                     temp.push(x.email);
                 });
                 res.status(200).json({
-                    students: temp
+                    recipients: temp
                 });
             } else {
+                console.log(err.sql)
                 next(err);
             }
 
