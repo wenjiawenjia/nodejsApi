@@ -4,7 +4,6 @@ const mysqlConnection = require('../../dbConnection');
 
 // 1. As a teacher, I want to register one or more students to a specified teacher.
 router.post('/register', (req, res, next) => {
-
     //     teacher: req.body.teacher,
     //     students: req.body.students
     let teacherId = [];
@@ -56,30 +55,53 @@ router.post('/register', (req, res, next) => {
 // to ALL of the given teachers).
 router.get('/commonstudents', (req, res, next) => {
     const teachers = req.query.teacher;
-    // console.log(teachers)
-    teachers.forEach(teacher => {
-        teacher.replace('%40', '@');
-    });
-    //TODO:
-    mysqlConnection.query(
-        "select s1.email from (SELECT s.* FROM ApiAssessment.teachers t inner join ApiAssessment.classes c on c.teacher = t.id inner join ApiAssessment.students s on s.id = c.student where s.isSuspended = false and t.email in (?)) s1 inner join ApiAssessment.classes c1 on c1.student = s1.id inner join ApiAssessment.teachers t1 on t1.id = c1.teacher where t1.email = ? ", [teachers[0], teachers[1]],
+    console.log(typeof teachers);
 
-        (err, rows, fields) => {
-            // console.log(rows);
-            const temp = [];
+    if (typeof teachers === 'string') {
 
-            if (!err) {
-                rows.forEach(element => {
-                    temp.push(element.email);
-                });
+        teachers.replace('%40', '@');
+        mysqlConnection.query(
+            "SELECT s.* FROM teachers t inner join classes c on c.teacher = t.id inner join students s on s.id = c.student where s.isSuspended = false and t.email in (?) ", [teachers], (err, rows, fields) => {
+                // console.log(rows);
+                const temp = [];
 
-                res.status(200).json({
-                    students: temp
-                });
-            } else {
-                next(err);
-            }
+                if (!err) {
+                    rows.forEach(element => {
+                        temp.push(element.email);
+                    });
+
+                    res.status(200).json({
+                        students: temp
+                    });
+                } else {
+                    next(err);
+                }
+            });
+    } else {
+        teachers.forEach(teacher => {
+            teacher.replace('%40', '@');
         });
+        mysqlConnection.query(
+            "select s1.email from (SELECT s.* FROM ApiAssessment.teachers t inner join ApiAssessment.classes c on c.teacher = t.id inner join ApiAssessment.students s on s.id = c.student where s.isSuspended = false and t.email in (?)) s1 inner join ApiAssessment.classes c1 on c1.student = s1.id inner join ApiAssessment.teachers t1 on t1.id = c1.teacher where t1.email = ? ", [teachers[0], teachers[1]],
+
+            (err, rows, fields) => {
+                // console.log(rows);
+                const temp = [];
+
+                if (!err) {
+                    rows.forEach(element => {
+                        temp.push(element.email);
+                    });
+
+                    res.status(200).json({
+                        students: temp
+                    });
+                } else {
+                    next(err);
+                }
+            });
+
+    }
 
 
 });
